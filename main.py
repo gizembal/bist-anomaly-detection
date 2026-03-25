@@ -53,15 +53,19 @@ def ozellik_hesapla(df):
 
 
 def model_calistir(df, contamination=0.02):
-    ozellikler = ['fiyat_degisim', 'hacim_oran', 'volatilite', 'fiyat_zskor', 'hacim_degisim']
-    X = df[ozellikler].replace([np.inf, -np.inf], np.nan).dropna()
-    df_model = df.loc[X.index].copy()
-
+    ozellikler = ['fiyat_degisim','hacim_oran','volatilite','fiyat_zskor','hacim_degisim']
+    
+    df_copy = df.copy()
+    df_copy[ozellikler] = df_copy[ozellikler].replace([np.inf, -np.inf], np.nan)
+    df_copy = df_copy.dropna(subset=ozellikler)
+    
+    X = df_copy[ozellikler].values  # numpy array'e çevir
+    
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-
+    
     model = IsolationForest(n_estimators=200, contamination=contamination, random_state=42)
-    df_model['anomali_skor'] = model.fit_predict(X_scaled)
-    df_model['anomali_skor_ham'] = model.score_samples(X_scaled)
-
-    return df_model
+    df_copy['anomali_skor'] = model.fit_predict(X_scaled)
+    df_copy['anomali_skor_ham'] = model.score_samples(X_scaled)
+    
+    return df_copy
