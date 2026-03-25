@@ -97,7 +97,21 @@ tablo['Volatilite %'] = tablo['Volatilite %'].round(2)
 tablo['Anomali Skoru'] = tablo['Anomali Skoru'].round(4)
 st.dataframe(tablo, use_container_width=True)
 
-st.subheader("Tüm Hisseler — Anomali Özeti")
-ozet = anomaliler.groupby('ticker').size().reset_index(name='Anomali Sayısı')
-ozet = ozet.sort_values('Anomali Sayısı', ascending=False)
-st.bar_chart(ozet.set_index('ticker'))
+st.subheader("All Stocks — Anomaly Summary")
+ozet = anomaliler.groupby('ticker').size().reset_index(name='Anomaly Count')
+ozet = ozet.sort_values('Anomaly Count', ascending=False)
+
+fig2 = go.Figure(go.Bar(
+    x=ozet['ticker'],
+    y=ozet['Anomaly Count'],
+    marker_color='#E24B4A'
+))
+fig2.update_layout(
+    height=300,
+    plot_bgcolor='#1a1a2e',
+    paper_bgcolor='#1a1a2e',
+    font=dict(color='white'),
+    xaxis=dict(gridcolor='rgba(255,255,255,0.1)'),
+    yaxis=dict(gridcolor='rgba(255,255,255,0.1)')
+)
+st.plotly_chart(fig2, use_container_width=True)
