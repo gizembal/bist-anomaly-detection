@@ -3,7 +3,7 @@
 An unsupervised machine learning system that detects suspicious price and volume movements in Turkish stock market (BIST) using Isolation Forest algorithm.
 
 ## Live Demo
-🔗 [Open Dashboard](https://bist-anomaly-detection-pappmisvmkhbsgrhqvkb5y6.streamlit.app/)
+🔗 [Open Dashboard](https://bist-anomaly-detection.streamlit.app/)
 
 ## What it does
 - Flags abnormal trading days based on price & volume behavior
