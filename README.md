@@ -46,4 +46,4 @@ streamlit run app.py
 ```
 
 ## Author
-Gizem Bal — [LinkedIn](https://linkedin.com/in/gizembal) | [GitHub](https://github.com/gizembal)
+Gizem Bal — [LinkedIn](https://linkedin.com/in/balgizem) | [GitHub](https://github.com/gizembal)
