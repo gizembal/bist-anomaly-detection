@@ -22,7 +22,7 @@ with st.sidebar:
 
 @st.cache_data(ttl=3600)
 def yukle():
-    df = pd.read_excel('bist_data.xls')
+    df = pd.read_csv('bist_data.csv')
     df['tarih'] = pd.to_datetime(df['tarih'])
     return df
 
