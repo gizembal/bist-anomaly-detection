@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import pandas as pd
+import pandas as pd import openpyxl
 from main import veri_cek, ozellik_hesapla, model_calistir, HISSELER
 
 st.set_page_config(
