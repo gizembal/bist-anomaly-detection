@@ -10,10 +10,9 @@ HISSELER = [
     "AKBNK.IS", "BIMAS.IS", "FROTO.IS", "PGSUS.IS", "ASELS.IS",
 ]
 
-
 def veri_cek(hisseler=HISSELER, yil=3):
     bitis = datetime.today().strftime('%Y-%m-%d')
-    baslangic = (datetime.today() - timedelta(days=yil * 365)).strftime('%Y-%m-%d')
+    baslangic = (datetime.today() - timedelta(days=yil*365)).strftime('%Y-%m-%d')
 
     df_ham = yf.download(hisseler, start=baslangic, end=bitis,
                          group_by='ticker', auto_adjust=True)
@@ -21,51 +20,52 @@ def veri_cek(hisseler=HISSELER, yil=3):
     for hisse in hisseler:
         try:
             df_h = df_ham[hisse].copy()
+            df_h.columns = [c[0] if isinstance(c, tuple) else c for c in df_h.columns]
             df_h['ticker'] = hisse
             df_h['tarih'] = df_h.index
             df_h = df_h.dropna(subset=['Close', 'Volume'])
+            df_h = df_h.rename(columns={
+                'Open':'acilis','High':'yuksek','Low':'dusuk',
+                'Close':'kapanis','Volume':'hacim'
+            })
             satirlar.append(df_h)
-        except:
-            pass
+        except Exception as e:
+            print(f"{hisse} hata: {e}")
 
     df = pd.concat(satirlar, ignore_index=True)
-    df = df.rename(columns={
-        'Open': 'acilis', 'High': 'yuksek', 'Low': 'dusuk',
-        'Close': 'kapanis', 'Volume': 'hacim'
-    })
     return df
 
-
 def ozellik_hesapla(df):
-    df = df.sort_values(['ticker', 'tarih']).reset_index(drop=True)
+    df = df.sort_values(['ticker','tarih']).reset_index(drop=True)
+    sonuc = []
     for hisse in df['ticker'].unique():
-        mask = df['ticker'] == hisse
-        df.loc[mask, 'fiyat_degisim'] = df.loc[mask, 'kapanis'].pct_change() * 100
-        df.loc[mask, 'hacim_ort_20g'] = df.loc[mask, 'hacim'].rolling(20).mean()
-        df.loc[mask, 'hacim_oran'] = df.loc[mask, 'hacim'] / df.loc[mask, 'hacim_ort_20g']
-        df.loc[mask, 'volatilite'] = (df.loc[mask, 'yuksek'] - df.loc[mask, 'dusuk']) / df.loc[mask, 'kapanis'] * 100
-        df.loc[mask, 'fiyat_zskor'] = (
-                                              df.loc[mask, 'fiyat_degisim'] - df.loc[mask, 'fiyat_degisim'].rolling(
-                                          20).mean()
-                                      ) / df.loc[mask, 'fiyat_degisim'].rolling(20).std()
-        df.loc[mask, 'hacim_degisim'] = df.loc[mask, 'hacim'].pct_change() * 100
-    return df.dropna()
-
+        d = df[df['ticker'] == hisse].copy()
+        d['fiyat_degisim'] = d['kapanis'].pct_change() * 100
+        d['hacim_ort_20g'] = d['hacim'].rolling(20).mean()
+        d['hacim_oran'] = d['hacim'] / d['hacim_ort_20g']
+        d['volatilite'] = (d['yuksek'] - d['dusuk']) / d['kapanis'] * 100
+        d['fiyat_zskor'] = (
+            d['fiyat_degisim'] - d['fiyat_degisim'].rolling(20).mean()
+        ) / d['fiyat_degisim'].rolling(20).std()
+        d['hacim_degisim'] = d['hacim'].pct_change() * 100
+        sonuc.append(d)
+    df = pd.concat(sonuc, ignore_index=True)
+    df = df.dropna()
+    return df
 
 def model_calistir(df, contamination=0.02):
     ozellikler = ['fiyat_degisim','hacim_oran','volatilite','fiyat_zskor','hacim_degisim']
-    
-    df_copy = df.copy()
-    df_copy[ozellikler] = df_copy[ozellikler].replace([np.inf, -np.inf], np.nan)
-    df_copy = df_copy.dropna(subset=ozellikler)
-    
-    X = df_copy[ozellikler].values  # numpy array'e çevir
-    
+    df = df.copy()
+    df[ozellikler] = df[ozellikler].replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=ozellikler)
+
+    X = df[ozellikler].to_numpy().astype(float)
+
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    
+
     model = IsolationForest(n_estimators=200, contamination=contamination, random_state=42)
-    df_copy['anomali_skor'] = model.fit_predict(X_scaled)
-    df_copy['anomali_skor_ham'] = model.score_samples(X_scaled)
-    
-    return df_copy
+    df['anomali_skor'] = model.fit_predict(X_scaled)
+    df['anomali_skor_ham'] = model.score_samples(X_scaled)
+
+    return df
