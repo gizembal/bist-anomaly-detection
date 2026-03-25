@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 from datetime import datetime, timedelta
+import time
 
 HISSELER = [
     "THYAO.IS", "GARAN.IS", "EREGL.IS", "SISE.IS", "KCHOL.IS",
@@ -14,12 +15,14 @@ def veri_cek(hisseler=HISSELER, yil=3):
     bitis = datetime.today().strftime('%Y-%m-%d')
     baslangic = (datetime.today() - timedelta(days=yil*365)).strftime('%Y-%m-%d')
 
-    df_ham = yf.download(hisseler, start=baslangic, end=bitis,
-                         group_by='ticker', auto_adjust=True)
     satirlar = []
     for hisse in hisseler:
         try:
-            df_h = df_ham[hisse].copy()
+            time.sleep(1)  # rate limit koruması
+            df_h = yf.download(hisse, start=baslangic, end=bitis,
+                               auto_adjust=True, progress=False)
+            if df_h.empty:
+                continue
             df_h.columns = [c[0] if isinstance(c, tuple) else c for c in df_h.columns]
             df_h['ticker'] = hisse
             df_h['tarih'] = df_h.index
@@ -30,7 +33,11 @@ def veri_cek(hisseler=HISSELER, yil=3):
             })
             satirlar.append(df_h)
         except Exception as e:
-            print(f"{hisse} hata: {e}")
+            print(f"{hisse} atlandı: {e}")
+            continue
+
+    if not satirlar:
+        raise ValueError("Hiç veri çekilemedi. Lütfen daha sonra tekrar deneyin.")
 
     df = pd.concat(satirlar, ignore_index=True)
     return df
@@ -50,14 +57,18 @@ def ozellik_hesapla(df):
         d['hacim_degisim'] = d['hacim'].pct_change() * 100
         sonuc.append(d)
     df = pd.concat(sonuc, ignore_index=True)
+    df = df.replace([np.inf, -np.inf], np.nan)
     df = df.dropna()
     return df
 
 def model_calistir(df, contamination=0.02):
     ozellikler = ['fiyat_degisim','hacim_oran','volatilite','fiyat_zskor','hacim_degisim']
     df = df.copy()
-    df[ozellikler] = df[ozellikler].replace([np.inf, -np.inf], np.nan)
+    df = df.replace([np.inf, -np.inf], np.nan)
     df = df.dropna(subset=ozellikler)
+
+    if len(df) == 0:
+        raise ValueError("Temizleme sonrası veri kalmadı.")
 
     X = df[ozellikler].to_numpy().astype(float)
 
