@@ -21,8 +21,8 @@ with st.sidebar:
 
 @st.cache_data(ttl=3600)
 def yukle():
-    df = veri_cek()
-    df = ozellik_hesapla(df)
+    df = pd.read_excel('bist_data.xls')
+    df['tarih'] = pd.to_datetime(df['tarih'])
     return df
 
 with st.spinner("Veri çekiliyor, lütfen bekle..."):
