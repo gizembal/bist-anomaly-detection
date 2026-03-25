@@ -12,8 +12,8 @@ HISSELER = [
 ]
 
 def veri_cek(hisseler=HISSELER, yil=3):
-    bitis = datetime.today().strftime('%Y-%m-%d')
-    baslangic = (datetime.today() - timedelta(days=yil*365)).strftime('%Y-%m-%d')
+    df = pd.read_excel('bist_data.xls')
+    return df
 
     satirlar = []
     for hisse in hisseler:
