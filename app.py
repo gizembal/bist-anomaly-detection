@@ -104,80 +104,41 @@ tablo['Anomali Skoru'] = tablo['Anomali Skoru'].round(4)
 st.dataframe(tablo, use_container_width=True)
 
 with st.expander("📖 Metodoloji — Özellikler nasıl hesaplanıyor?"):
-    st.markdown("""
-    Bu sistem her işlem günü için 5 finansal özellik hesaplar ve 
-    Isolation Forest algoritmasıyla anormal günleri tespit eder.
     
-    ---
+    col_a, col_b = st.columns(2)
     
-    **1. Fiyat Değişimi (%)**
-    
-    Günlük fiyat hareketini ölçer.
-```
-    fiyat_degisim = (bugünkü kapanış - dünkü kapanış) / dünkü kapanış × 100
-```
-    Normal hisseler günde ±2-3% oynar. ±8-10% hareket nadir ve şüphelidir.
-    
-    ---
-    
-    **2. Hacim Oranı**
-    
-    Bugünkü işlem hacmini son 20 günün ortalamasıyla karşılaştırır.
-```
-    hacim_oran = bugünkü hacim / son 20 günlük ortalama hacim
-```
-    Oran 3x üzeriyse normalin 3 katı işlem yapılmış demektir.
-    Her hisse kendi geçmişiyle karşılaştırılır.
-    
-    ---
-    
-    **3. Gün İçi Volatilite (%)**
-    
-    Günün en yüksek ve en düşük fiyatı arasındaki farkı ölçer.
-```
-    volatilite = (günün en yükseği - günün en düşüğü) / kapanış × 100
-```
-    Kapanış fiyatı sakin görünse bile gün içinde çok oynaklık 
-    yaşanmış olabilir.
-    
-    ---
-    
-    **4. Fiyat Z-Skoru**
-    
-    Bugünkü fiyat hareketinin bu hisse için ne kadar nadir olduğunu ölçer.
-```
-    z_skor = (bugünkü değişim - son 20 günün ortalaması) / son 20 günün std
-```
-    Her hisse kendi volatilitesine göre normalize edilir.
-    z > ±2: nadir | z > ±3: çok nadir | z > ±4: alarm
-    
-    ---
-    
-    **5. Hacim Değişimi (%)**
-    
-    Hacmin bir önceki güne göre ne kadar değiştiğini ölçer.
-```
-    hacim_degisim = (bugünkü hacim - dünkü hacim) / dünkü hacim × 100
-```
-    Hacim oranı uzun vadeli normali gösterirken, 
-    hacim değişimi anlık sıçramayı yakalar.
-    
-    ---
-    
-    **Isolation Forest Algoritması**
-    
-    5 özellik birlikte değerlendirilerek her günün "normalden ne kadar 
-    uzak" olduğu hesaplanır. Diğer günlerden kolayca izole edilebilen 
-    günler anomali olarak işaretlenir.
-    
-    - Anomali skoru -1'e yaklaştıkça daha anormal
-    - `contamination` parametresi anomali oranını belirler (varsayılan: %2)
-    
-    ⚠️ **Önemli Not:** Anomali = Manipülasyon değildir. 
-    Flaglenen günler istatistiksel olarak sıradışıdır — 
-    büyük haberler, makroekonomik olaylar veya gerçek manipülasyon 
-    nedeniyle olabilir. Nihai yorum insan analistine aittir.
-    """)
+    with col_a:
+        st.subheader("1. Fiyat Değişimi (%)")
+        st.caption("Günlük fiyat hareketini ölçer")
+        st.code("(bugünkü kapanış - dünkü kapanış) / dünkü kapanış × 100")
+        st.info("Normal: ±2-3% | Şüpheli: ±8-10%")
+        
+        st.subheader("2. Hacim Oranı")
+        st.caption("Bugünkü hacmi 20 günlük ortalama ile karşılaştırır")
+        st.code("bugünkü hacim / son 20 günlük ortalama hacim")
+        st.info("3x üzeri = normalin 3 katı işlem")
+        
+        st.subheader("3. Gün İçi Volatilite (%)")
+        st.caption("Günün en yüksek ve en düşük fiyatı arasındaki fark")
+        st.code("(günün en yükseği - günün en düşüğü) / kapanış × 100")
+        st.info("Kapanış sakin görünse bile gün içi oynaklığı yakalar")
+
+    with col_b:
+        st.subheader("4. Fiyat Z-Skoru")
+        st.caption("Bu hareket bu hisse için ne kadar nadir?")
+        st.code("(bugünkü değişim - 20g ortalama) / 20g standart sapma")
+        st.info("±2: nadir | ±3: çok nadir | ±4: alarm 🚨")
+        
+        st.subheader("5. Hacim Değişimi (%)")
+        st.caption("Hacmin dünden bugüne değişimi")
+        st.code("(bugünkü hacim - dünkü hacim) / dünkü hacim × 100")
+        st.info("Anlık hacim sıçramasını yakalar")
+        
+        st.subheader("Isolation Forest")
+        st.caption("5 özellik birlikte değerlendiriliyor")
+        st.info("Diğer günlerden kolayca izole edilen günler → anomali\nContamination = %2 → 7.300 günden 146 anomali")
+
+    st.warning("⚠️ Anomali = Manipülasyon değildir. Flaglenen günler istatistiksel olarak sıradışıdır — büyük haberler, makroekonomik olaylar veya gerçek manipülasyon nedeniyle olabilir.")
 
 st.subheader("All Stocks — Anomaly Summary")
 ozet = anomaliler.groupby('ticker').size().reset_index(name='Anomaly Count')
