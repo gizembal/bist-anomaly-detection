@@ -88,14 +88,96 @@ fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.1)', color='white'
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader(f"{secili_hisse} — Tespit Edilen Anomaliler")
-tablo = anomali_h[['tarih','kapanis','fiyat_degisim','hacim_oran','volatilite','anomali_skor_ham']].copy()
-tablo.columns = ['Tarih','Kapanış','Fiyat Değişimi %','Hacim Oranı','Volatilite %','Anomali Skoru']
+tablo = anomali_h[['tarih','kapanis','fiyat_degisim','hacim_oran',
+                    'volatilite','fiyat_zskor','hacim_degisim',
+                    'anomali_skor_ham']].copy()
+tablo.columns = ['Tarih','Kapanış','Fiyat Değişimi %','Hacim Oranı',
+                 'Volatilite %','Fiyat Z-Skoru','Hacim Değişimi %',
+                 'Anomali Skoru']
 tablo = tablo.sort_values('Anomali Skoru').reset_index(drop=True)
 tablo['Fiyat Değişimi %'] = tablo['Fiyat Değişimi %'].round(2)
 tablo['Hacim Oranı'] = tablo['Hacim Oranı'].round(2)
 tablo['Volatilite %'] = tablo['Volatilite %'].round(2)
+tablo['Fiyat Z-Skoru'] = tablo['Fiyat Z-Skoru'].round(2)
+tablo['Hacim Değişimi %'] = tablo['Hacim Değişimi %'].round(2)
 tablo['Anomali Skoru'] = tablo['Anomali Skoru'].round(4)
 st.dataframe(tablo, use_container_width=True)
+
+with st.expander("📖 Metodoloji — Özellikler nasıl hesaplanıyor?"):
+    st.markdown("""
+    Bu sistem her işlem günü için 5 finansal özellik hesaplar ve 
+    Isolation Forest algoritmasıyla anormal günleri tespit eder.
+    
+    ---
+    
+    **1. Fiyat Değişimi (%)**
+    
+    Günlük fiyat hareketini ölçer.
+```
+    fiyat_degisim = (bugünkü kapanış - dünkü kapanış) / dünkü kapanış × 100
+```
+    Normal hisseler günde ±2-3% oynar. ±8-10% hareket nadir ve şüphelidir.
+    
+    ---
+    
+    **2. Hacim Oranı**
+    
+    Bugünkü işlem hacmini son 20 günün ortalamasıyla karşılaştırır.
+```
+    hacim_oran = bugünkü hacim / son 20 günlük ortalama hacim
+```
+    Oran 3x üzeriyse normalin 3 katı işlem yapılmış demektir.
+    Her hisse kendi geçmişiyle karşılaştırılır.
+    
+    ---
+    
+    **3. Gün İçi Volatilite (%)**
+    
+    Günün en yüksek ve en düşük fiyatı arasındaki farkı ölçer.
+```
+    volatilite = (günün en yükseği - günün en düşüğü) / kapanış × 100
+```
+    Kapanış fiyatı sakin görünse bile gün içinde çok oynaklık 
+    yaşanmış olabilir.
+    
+    ---
+    
+    **4. Fiyat Z-Skoru**
+    
+    Bugünkü fiyat hareketinin bu hisse için ne kadar nadir olduğunu ölçer.
+```
+    z_skor = (bugünkü değişim - son 20 günün ortalaması) / son 20 günün std
+```
+    Her hisse kendi volatilitesine göre normalize edilir.
+    z > ±2: nadir | z > ±3: çok nadir | z > ±4: alarm
+    
+    ---
+    
+    **5. Hacim Değişimi (%)**
+    
+    Hacmin bir önceki güne göre ne kadar değiştiğini ölçer.
+```
+    hacim_degisim = (bugünkü hacim - dünkü hacim) / dünkü hacim × 100
+```
+    Hacim oranı uzun vadeli normali gösterirken, 
+    hacim değişimi anlık sıçramayı yakalar.
+    
+    ---
+    
+    **Isolation Forest Algoritması**
+    
+    5 özellik birlikte değerlendirilerek her günün "normalden ne kadar 
+    uzak" olduğu hesaplanır. Diğer günlerden kolayca izole edilebilen 
+    günler anomali olarak işaretlenir.
+    
+    - Anomali skoru -1'e yaklaştıkça daha anormal
+    - `contamination` parametresi anomali oranını belirler (varsayılan: %2)
+    
+    ⚠️ **Önemli Not:** Anomali = Manipülasyon değildir. 
+    Flaglenen günler istatistiksel olarak sıradışıdır — 
+    büyük haberler, makroekonomik olaylar veya gerçek manipülasyon 
+    nedeniyle olabilir. Nihai yorum insan analistine aittir.
+    """)
 
 st.subheader("All Stocks — Anomaly Summary")
 ozet = anomaliler.groupby('ticker').size().reset_index(name='Anomaly Count')
