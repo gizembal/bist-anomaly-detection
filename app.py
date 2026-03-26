@@ -39,6 +39,43 @@ col4.metric("Anomali Oranı", f"%{len(anomaliler)/len(df_model)*100:.1f}")
 
 st.divider()
 
+with st.expander("📖 Metodoloji — Özellikler nasıl hesaplanıyor?"):
+    
+    col_a, col_b = st.columns(2)
+    
+    with col_a:
+        st.subheader("1. Fiyat Değişimi (%)")
+        st.caption("Günlük fiyat hareketini ölçer")
+        st.code("(bugünkü kapanış - dünkü kapanış) / dünkü kapanış × 100")
+        st.info("Normal: ±2-3% | Şüpheli: ±8-10%")
+        
+        st.subheader("2. Hacim Oranı")
+        st.caption("Bugünkü hacmi 20 günlük ortalama ile karşılaştırır")
+        st.code("bugünkü hacim / son 20 günlük ortalama hacim")
+        st.info("3x üzeri = normalin 3 katı işlem")
+        
+        st.subheader("3. Gün İçi Volatilite (%)")
+        st.caption("Günün en yüksek ve en düşük fiyatı arasındaki fark")
+        st.code("(günün en yükseği - günün en düşüğü) / kapanış × 100")
+        st.info("Kapanış sakin görünse bile gün içi oynaklığı yakalar")
+
+    with col_b:
+        st.subheader("4. Fiyat Z-Skoru")
+        st.caption("Bu hareket bu hisse için ne kadar nadir?")
+        st.code("(bugünkü değişim - 20g ortalama) / 20g standart sapma")
+        st.info("±2: nadir | ±3: çok nadir | ±4: alarm 🚨")
+        
+        st.subheader("5. Hacim Değişimi (%)")
+        st.caption("Hacmin dünden bugüne değişimi")
+        st.code("(bugünkü hacim - dünkü hacim) / dünkü hacim × 100")
+        st.info("Anlık hacim sıçramasını yakalar")
+        
+        st.subheader("Isolation Forest")
+        st.caption("5 özellik birlikte değerlendiriliyor")
+        st.info("Diğer günlerden kolayca izole edilen günler → anomali\nContamination = %2 → 7.300 günden 146 anomali")
+
+    st.warning("⚠️ Anomali = Manipülasyon değildir. Flaglenen günler istatistiksel olarak sıradışıdır — büyük haberler, makroekonomik olaylar veya gerçek manipülasyon nedeniyle olabilir.")
+
 df_h = df_model[df_model['ticker'] == secili_hisse]
 anomali_h = df_h[df_h['anomali_skor'] == -1]
 
@@ -102,43 +139,6 @@ tablo['Fiyat Z-Skoru'] = tablo['Fiyat Z-Skoru'].round(2)
 tablo['Hacim Değişimi %'] = tablo['Hacim Değişimi %'].round(2)
 tablo['Anomali Skoru'] = tablo['Anomali Skoru'].round(4)
 st.dataframe(tablo, use_container_width=True)
-
-with st.expander("📖 Metodoloji — Özellikler nasıl hesaplanıyor?"):
-    
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.subheader("1. Fiyat Değişimi (%)")
-        st.caption("Günlük fiyat hareketini ölçer")
-        st.code("(bugünkü kapanış - dünkü kapanış) / dünkü kapanış × 100")
-        st.info("Normal: ±2-3% | Şüpheli: ±8-10%")
-        
-        st.subheader("2. Hacim Oranı")
-        st.caption("Bugünkü hacmi 20 günlük ortalama ile karşılaştırır")
-        st.code("bugünkü hacim / son 20 günlük ortalama hacim")
-        st.info("3x üzeri = normalin 3 katı işlem")
-        
-        st.subheader("3. Gün İçi Volatilite (%)")
-        st.caption("Günün en yüksek ve en düşük fiyatı arasındaki fark")
-        st.code("(günün en yükseği - günün en düşüğü) / kapanış × 100")
-        st.info("Kapanış sakin görünse bile gün içi oynaklığı yakalar")
-
-    with col_b:
-        st.subheader("4. Fiyat Z-Skoru")
-        st.caption("Bu hareket bu hisse için ne kadar nadir?")
-        st.code("(bugünkü değişim - 20g ortalama) / 20g standart sapma")
-        st.info("±2: nadir | ±3: çok nadir | ±4: alarm 🚨")
-        
-        st.subheader("5. Hacim Değişimi (%)")
-        st.caption("Hacmin dünden bugüne değişimi")
-        st.code("(bugünkü hacim - dünkü hacim) / dünkü hacim × 100")
-        st.info("Anlık hacim sıçramasını yakalar")
-        
-        st.subheader("Isolation Forest")
-        st.caption("5 özellik birlikte değerlendiriliyor")
-        st.info("Diğer günlerden kolayca izole edilen günler → anomali\nContamination = %2 → 7.300 günden 146 anomali")
-
-    st.warning("⚠️ Anomali = Manipülasyon değildir. Flaglenen günler istatistiksel olarak sıradışıdır — büyük haberler, makroekonomik olaylar veya gerçek manipülasyon nedeniyle olabilir.")
 
 st.subheader("All Stocks — Anomaly Summary")
 ozet = anomaliler.groupby('ticker').size().reset_index(name='Anomaly Count')
